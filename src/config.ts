@@ -1,5 +1,14 @@
 import dotenv from "dotenv"
+import { createPool } from "mysql2/promise"
 dotenv.config()
 
-export const PORT = process.env.PORT || 8080
+export const PORT = process.env.NODE_DOCKER_PORT || 8080
 export const NODE_ENV = process.env.NODE_ENV || "development"
+
+export const pool = createPool({
+  host: process.env.MYSQL_HOST || "mysqldb",
+  port: Number(process.env.MYSQL_DOCKER_PORT) || 3306,
+  user: process.env.MYSQL_USER || "root",
+  password: process.env.MYSQL_ROOT_PASSWORD || "1234",
+  database: process.env.MYSQL_DATABASE || "turnsystem",
+})

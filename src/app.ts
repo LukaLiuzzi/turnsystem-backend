@@ -3,6 +3,7 @@ import compression from "compression"
 import cors from "cors"
 import helmet from "helmet"
 import { isHttpError } from "./helpers"
+import { pool } from "./config"
 
 const app = express()
 
@@ -13,8 +14,9 @@ app.use(compression())
 app.use(cors())
 app.use(helmet())
 
-app.get("/", (req, res) => {
-  res.send("Hello World!")
+app.get("/", async (req, res) => {
+  const result = await pool.query("SELECT NOW()")
+  res.json(result)
 })
 
 app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
