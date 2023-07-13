@@ -3,7 +3,7 @@ import compression from "compression"
 import cors from "cors"
 import helmet from "helmet"
 import { isHttpError } from "./helpers"
-import { pool } from "./config"
+import { userRouter } from "./routes/users.routes"
 
 const app = express()
 
@@ -14,15 +14,12 @@ app.use(compression())
 app.use(cors())
 app.use(helmet())
 
-app.get("/", async (req, res) => {
-  const result = await pool.query("SELECT NOW()")
-  res.json(result)
-})
+app.use("/api/v1/users", userRouter)
 
 app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
   console.error(error)
 
-  let errorMessage = "An error occurred"
+  let errorMessage = "An internal error occurred"
   let statusCode = 500
 
   if (isHttpError(error)) {
