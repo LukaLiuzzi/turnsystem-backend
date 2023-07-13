@@ -1,4 +1,4 @@
-import type { HttpError } from "./types"
+import { type HttpError } from "./types"
 
 export function createHttpError(
   statusCode: number,
