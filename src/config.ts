@@ -9,6 +9,6 @@ export const pool = createPool({
   host: process.env.MYSQL_HOST || "mysqldb",
   port: Number(process.env.MYSQL_DOCKER_PORT) || 3306,
   user: process.env.MYSQL_USER || "root",
-  password: process.env.MYSQL_ROOT_PASSWORD || "1234",
+  password: process.env.MYSQL_ROOT_PASSWORD || "root",
   database: process.env.MYSQL_DATABASE || "turnsystem",
 })
