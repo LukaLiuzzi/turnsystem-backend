@@ -7,6 +7,7 @@ import { loginSchema, userSchema } from "../schemas/schemas"
 import passport from "../libs/passport"
 import { User } from "../types/types"
 import bcrypt from "bcrypt"
+import { isAuthenticated } from "../middlewares/authorization.middleware"
 
 const userRouter = Router()
 
@@ -88,6 +89,13 @@ userRouter.get("/logout", (req: Request, res: Response, next: NextFunction) => {
 })
 
 // Rutas de manejo de usuarios
+
+userRouter.get("/user", isAuthenticated, (req, res, next) => {
+  // Eliminar la contraseña del usuario
+  const { password, ...userWithoutPassword } = req.user as User
+
+  res.json(userWithoutPassword)
+})
 
 userRouter.get("/", async (_, res, next) => {
   try {
