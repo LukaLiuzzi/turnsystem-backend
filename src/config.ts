@@ -4,6 +4,8 @@ dotenv.config()
 
 export const PORT = process.env.NODE_DOCKER_PORT || 8080
 export const NODE_ENV = process.env.NODE_ENV || "development"
+export const SECRET_SESSION =
+  process.env.SECRET_SESSION || "dklanglkdjsgn321y1736g8!!re32fj"
 
 export const pool = createPool({
   host: process.env.MYSQL_HOST || "mysqldb",
