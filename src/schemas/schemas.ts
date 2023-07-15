@@ -93,3 +93,55 @@ export const clientSchema = z.object({
 export const clientSchemaPartial = clientSchema.partial()
 
 export type ClientSchema = z.infer<typeof clientSchema>
+
+export const turnSchema = z.object({
+  client_id: z.number({
+    required_error: "El id del cliente es requerido",
+  }),
+  date: z
+    .string({
+      required_error: "La fecha es requerida",
+    })
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "La fecha debe tener el formato YYYY-MM-DD"),
+  time: z
+    .string({
+      required_error: "La hora es requerida",
+    })
+    .regex(/^\d{2}:\d{2}$/, "La hora debe tener el formato HH:MM"),
+  status: z.enum(["Pending", "Confirmed", "Cancelled"], {
+    required_error:
+      "El estado es requerido y debe ser Pending, Confirmed o Cancelled",
+  }),
+  service_id: z.number({
+    required_error: "El id del servicio es requerido",
+  }),
+})
+
+export const turnSchemaPartial = turnSchema.partial()
+
+export type TurnSchema = z.infer<typeof turnSchema>
+
+export const loginSchema = z.object({
+  email: z
+    .string({
+      required_error: "El email es requerido",
+    })
+    .email({
+      message: "El email debe ser una dirección de email válida",
+    })
+    .max(100, {
+      message: "El email debe tener como máximo 100 caracteres",
+    }),
+  password: z
+    .string({
+      required_error: "La contraseña es requerida",
+    })
+    .min(8, {
+      message: "La contraseña debe tener al menos 8 caracteres",
+    })
+    .max(16, {
+      message: "La contraseña debe tener como máximo 16 caracteres",
+    }),
+})
+
+export type LoginSchema = z.infer<typeof loginSchema>
