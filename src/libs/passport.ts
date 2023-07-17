@@ -3,8 +3,7 @@ import { Strategy as LocalStrategy } from "passport-local"
 import { pool } from "../config"
 import { RowDataPacket } from "mysql2"
 import { User } from "../types/types"
-import { createHttpError } from "../helpers"
-import bcrypt from "bcrypt"
+import { comparePassword, createHttpError } from "../helpers"
 import { Request } from "express"
 
 passport.use(
@@ -25,7 +24,7 @@ passport.use(
         const user: User = results[0] as User
 
         // Comparar la contraseña del usuario encontrado con la proporcionada
-        const validPassword = await bcrypt.compare(password, user.password)
+        const validPassword = await comparePassword(password, user.password)
 
         if (!validPassword) {
           return done(createHttpError(404, "Credenciales inválidas"))
