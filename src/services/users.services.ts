@@ -1,7 +1,7 @@
 import { OkPacket, RowDataPacket } from "mysql2"
 import { pool } from "../config"
 import { User, UserWithId } from "../types/types"
-import { createHttpError, hashPassword } from "../helpers"
+import { createHttpError, hashPassword, isHttpError } from "../helpers"
 
 export const registerUserService = async ({
   email,
@@ -9,54 +9,66 @@ export const registerUserService = async ({
   phone_number,
   username,
 }: User) => {
-  // Verificar si el usuario ya existe
-  const [rows] = await pool.query<RowDataPacket[]>(
-    "SELECT * FROM users WHERE email = ?",
-    [email]
-  )
+  try {
+    // Verificar si el usuario ya existe
+    const [rows] = await pool.query<RowDataPacket[]>(
+      "SELECT * FROM users WHERE email = ?",
+      [email]
+    )
 
-  if (rows.length > 0) {
-    throw createHttpError(400, "El usuario ya existe")
+    if (rows.length > 0) {
+      return createHttpError(400, "El usuario ya existe")
+    }
+
+    // Hashear contraseña
+    const hashedPassword = await hashPassword(password)
+
+    // Crear usuario
+    const [result] = await pool.query<OkPacket>(
+      "INSERT INTO users (email, password, phone_number, username) VALUES (?, ?, ?, ?)",
+      [email, hashedPassword, phone_number, username]
+    )
+
+    const newUser = {
+      id: result.insertId,
+      email,
+      phone_number,
+      username,
+    }
+
+    return newUser
+  } catch (error) {
+    throw createHttpError(500, "Error al registrar usuario")
   }
-
-  // Hashear contraseña
-  const hashedPassword = await hashPassword(password)
-
-  // Crear usuario
-  const [result] = await pool.query<OkPacket>(
-    "INSERT INTO users (email, password, phone_number, username) VALUES (?, ?, ?, ?)",
-    [email, hashedPassword, phone_number, username]
-  )
-
-  const newUser = {
-    id: result.insertId,
-    email,
-    phone_number,
-    username,
-  }
-
-  return newUser
 }
 
 export const getUsersService = async () => {
-  const [rows] = await pool.query<RowDataPacket[]>("SELECT * FROM users")
+  try {
+    const [rows] = await pool.query<RowDataPacket[]>("SELECT * FROM users")
 
-  return rows
+    return rows
+  } catch (error) {
+    throw createHttpError(500, "Error al obtener usuarios")
+  }
 }
 
 export const getUserByIdService = async (id: number) => {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    "SELECT * FROM users WHERE id = ?",
-    [id]
-  )
-  if (rows.length === 0) {
-    throw createHttpError(404, "Usuario no encontrado")
+  try {
+    const [rows] = await pool.query<RowDataPacket[]>(
+      "SELECT * FROM users WHERE id = ?",
+      [id]
+    )
+    if (rows.length === 0) {
+      return createHttpError(404, "Usuario no encontrado")
+    }
+
+    // Eliminar la contraseña del usuario
+    delete rows[0].password
+
+    return rows[0]
+  } catch (error) {
+    throw createHttpError(500, "Error al obtener usuario")
   }
-
-  // Eliminar la contraseña del usuario
-  delete rows[0].password
-
-  return rows[0]
 }
 
 export const updateUserService = async ({
@@ -66,38 +78,51 @@ export const updateUserService = async ({
   username,
   id,
 }: UserWithId) => {
-  const user = await getUserByIdService(id)
+  try {
+    const user = await getUserByIdService(id)
 
-  // Actualizamos solo los campos que se envían
-  const updatedEmail = email || user.email
-  const updatedPhoneNumber = phone_number || user.phone_number
-  const updatedUsername = username || user.username
-  const hashedPassword = await hashPassword(password)
-  const updatedPassword = password ? hashedPassword : user.password
+    if (isHttpError(user)) {
+      return user
+    }
 
-  // Actualizar usuario
-  await pool.query(
-    "UPDATE users SET email = ?, password = ?, phone_number = ?, username = ? WHERE id = ?",
-    [updatedEmail, updatedPassword, updatedPhoneNumber, updatedUsername, id]
-  )
+    // Actualizamos solo los campos que se envían
+    const updatedEmail = email || user.email
+    const updatedPhoneNumber = phone_number || user.phone_number
+    const updatedUsername = username || user.username
+    const hashedPassword = await hashPassword(password)
+    const updatedPassword = password ? hashedPassword : user.password
 
-  const updatedUser = {
-    id,
-    email: updatedEmail,
-    phone_number: updatedPhoneNumber,
-    username: updatedUsername,
+    // Actualizar usuario
+    await pool.query(
+      "UPDATE users SET email = ?, password = ?, phone_number = ?, username = ? WHERE id = ?",
+      [updatedEmail, updatedPassword, updatedPhoneNumber, updatedUsername, id]
+    )
+
+    const updatedUser = {
+      id,
+      email: updatedEmail,
+      phone_number: updatedPhoneNumber,
+      username: updatedUsername,
+    }
+
+    return updatedUser
+  } catch (error) {
+    throw createHttpError(500, "Error al actualizar usuario")
   }
-
-  return updatedUser
 }
 
 export const deleteUserService = async (id: number) => {
-  const [rows] = await pool.query<OkPacket>("DELETE FROM users WHERE id = ?", [
-    id,
-  ])
-  if (rows.affectedRows === 0) {
-    throw createHttpError(404, "Usuario no encontrado")
-  }
+  try {
+    const [rows] = await pool.query<OkPacket>(
+      "DELETE FROM users WHERE id = ?",
+      [id]
+    )
+    if (rows.affectedRows === 0) {
+      return createHttpError(404, "Usuario no encontrado")
+    }
 
-  return true
+    return true
+  } catch (error) {
+    throw createHttpError(500, "Error al eliminar usuario")
+  }
 }
