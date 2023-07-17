@@ -7,6 +7,7 @@ import { isHttpError } from "./helpers"
 import { userRouter } from "./routes/users.routes"
 import { SECRET_SESSION } from "./config"
 import passport from "passport"
+import morgan from "morgan"
 
 const app = express()
 
@@ -21,6 +22,7 @@ app.use(
   })
 )
 app.use(helmet())
+app.use(morgan("dev"))
 
 // Configuración de sesión
 app.use(
