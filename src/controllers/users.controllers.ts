@@ -7,6 +7,7 @@ import {
   registerUserService,
   updateUserService,
 } from "../services/users.services"
+import { isHttpError } from "../helpers"
 
 export const registerUserController = async (
   req: Request,
@@ -16,12 +17,16 @@ export const registerUserController = async (
   try {
     const { email, password, phone_number, username }: User = req.body
 
-    const newUser = registerUserService({
+    const newUser = await registerUserService({
       email,
       password,
       phone_number,
       username,
     })
+
+    if (isHttpError(newUser)) {
+      throw newUser
+    }
 
     res.json(newUser)
   } catch (err) {
@@ -95,6 +100,10 @@ export const getUserByIdController = async (
     const { id } = req.params
     const user = await getUserByIdService(Number(id))
 
+    if (isHttpError(user)) {
+      throw user
+    }
+
     res.json(user)
   } catch (err) {
     next(err)
@@ -118,6 +127,10 @@ export const updateUserController = async (
       id: Number(id),
     })
 
+    if (isHttpError(updatedUser)) {
+      throw updatedUser
+    }
+
     res.json(updatedUser)
   } catch (err) {
     next(err)
@@ -133,9 +146,11 @@ export const deleteUserController = async (
     const { id } = req.params
     const isDeleted = await deleteUserService(Number(id))
 
-    res.json({
-      message: isDeleted ? "Usuario eliminado" : "Error al eliminar el usuario",
-    })
+    if (isHttpError(isDeleted)) {
+      throw isDeleted
+    }
+
+    res.json({ message: "Usuario eliminado" })
   } catch (err) {
     next(err)
   }
