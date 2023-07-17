@@ -1,9 +1,12 @@
 export interface User {
-  id: number
   username: string
   password: string
   email: string
   phone_number: string
+}
+
+export interface UserWithId extends User {
+  id: number
 }
 
 export interface Client {
