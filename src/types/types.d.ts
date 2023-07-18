@@ -10,11 +10,14 @@ export interface UserWithId extends User {
 }
 
 export interface Client {
-  id: number
   first_name: string
   last_name: string
   email: string
   phone_number: string
+}
+
+export interface ClientWithId extends Client {
+  id: number
 }
 
 export enum TurnStatus {
