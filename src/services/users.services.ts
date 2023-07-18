@@ -46,7 +46,13 @@ export const getUsersService = async () => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>("SELECT * FROM users")
 
-    return rows
+    // Eliminar la contraseña de los usuarios
+    const users = rows.map((user) => {
+      delete user.password
+      return user
+    })
+
+    return users
   } catch (error) {
     throw createHttpError(500, "Error al obtener usuarios")
   }
@@ -89,8 +95,9 @@ export const updateUserService = async ({
     const updatedEmail = email || user.email
     const updatedPhoneNumber = phone_number || user.phone_number
     const updatedUsername = username || user.username
-    const hashedPassword = await hashPassword(password)
-    const updatedPassword = password ? hashedPassword : user.password
+    const updatedPassword = password
+      ? await hashPassword(password)
+      : user.password
 
     // Actualizar usuario
     await pool.query(
@@ -123,6 +130,7 @@ export const deleteUserService = async (id: number) => {
 
     return true
   } catch (error) {
+    console.log(error)
     throw createHttpError(500, "Error al eliminar usuario")
   }
 }
