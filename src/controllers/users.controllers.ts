@@ -28,7 +28,7 @@ export const registerUserController = async (
       throw newUser
     }
 
-    res.json(newUser)
+    res.status(201).json(newUser)
   } catch (err) {
     next(err)
   }
