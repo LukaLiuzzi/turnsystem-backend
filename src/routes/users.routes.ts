@@ -32,7 +32,7 @@ userRouter.post(
   loginUserController
 )
 
-userRouter.get("/logout", isAuthenticated, logoutUserController)
+userRouter.post("/logout", isAuthenticated, logoutUserController)
 
 // Rutas de manejo de usuarios
 userRouter.get("/user", isAuthenticated, getUserController)
