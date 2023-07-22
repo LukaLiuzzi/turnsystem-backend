@@ -1,6 +1,6 @@
 import { Router } from "express"
 import { validataSchema } from "../middlewares/validator.middleware"
-import { loginSchema, userSchema } from "../schemas/schemas"
+import { loginSchema, userSchema, userSchemaPartial } from "../schemas/schemas"
 import passport from "../libs/passport"
 import { isAuthenticated } from "../middlewares/authorization.middleware"
 import {
@@ -41,7 +41,12 @@ userRouter.get("/", isAuthenticated, getUsersController)
 
 userRouter.get("/:id", isAuthenticated, getUserByIdController)
 
-userRouter.patch("/:id", isAuthenticated, updateUserController)
+userRouter.patch(
+  "/:id",
+  isAuthenticated,
+  validataSchema(userSchemaPartial),
+  updateUserController
+)
 
 userRouter.delete("/:id", isAuthenticated, deleteUserController)
 
