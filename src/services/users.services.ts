@@ -1,7 +1,7 @@
 import { OkPacket, RowDataPacket } from "mysql2"
-import { pool } from "../config"
 import { User, UserWithId } from "../types/types"
 import { createHttpError, hashPassword, isHttpError } from "../helpers"
+import { connection } from "../db_connection"
 
 export const registerUserService = async ({
   email,
@@ -11,7 +11,7 @@ export const registerUserService = async ({
 }: User) => {
   try {
     // Verificar si el usuario ya existe
-    const [rows] = await pool.query<RowDataPacket[]>(
+    const [rows] = await connection.query<RowDataPacket[]>(
       "SELECT * FROM users WHERE email = ?",
       [email]
     )
@@ -20,11 +20,12 @@ export const registerUserService = async ({
       return createHttpError(400, "El usuario ya existe")
     }
 
+    if (!password) return createHttpError(400, "La contraseña es requerida")
     // Hashear contraseña
     const hashedPassword = await hashPassword(password)
 
     // Crear usuario
-    const [result] = await pool.query<OkPacket>(
+    const [result] = await connection.query<OkPacket>(
       "INSERT INTO users (email, password, phone_number, username) VALUES (?, ?, ?, ?)",
       [email, hashedPassword, phone_number, username]
     )
@@ -44,12 +45,14 @@ export const registerUserService = async ({
 
 export const getUsersService = async () => {
   try {
-    const [rows] = await pool.query<RowDataPacket[]>("SELECT * FROM users")
+    const [rows] = await connection.query<RowDataPacket[]>(
+      "SELECT * FROM users"
+    )
 
     // Eliminar la contraseña de los usuarios
-    const users = rows.map((user) => {
-      delete user.password
-      return user
+    const users: User[] = rows.map((user: RowDataPacket) => {
+      const { id, email, phone_number, username } = user
+      return { id, email, phone_number, username }
     })
 
     return users
@@ -60,7 +63,7 @@ export const getUsersService = async () => {
 
 export const getUserByIdService = async (id: number) => {
   try {
-    const [rows] = await pool.query<RowDataPacket[]>(
+    const [rows] = await connection.query<RowDataPacket[]>(
       "SELECT * FROM users WHERE id = ?",
       [id]
     )
@@ -91,6 +94,18 @@ export const updateUserService = async ({
       return user
     }
 
+    // Si hay otro usuario con el mismo email se lanza un error
+    if (email && email !== user.email) {
+      const [rows] = await connection.query<RowDataPacket[]>(
+        "SELECT * FROM users WHERE email = ?",
+        [email]
+      )
+
+      if (rows.length > 0) {
+        return createHttpError(400, "El usuario ya existe")
+      }
+    }
+
     // Actualizamos solo los campos que se envían
     const updatedEmail = email || user.email
     const updatedPhoneNumber = phone_number || user.phone_number
@@ -100,7 +115,7 @@ export const updateUserService = async ({
       : user.password
 
     // Actualizar usuario
-    await pool.query(
+    await connection.query(
       "UPDATE users SET email = ?, password = ?, phone_number = ?, username = ? WHERE id = ?",
       [updatedEmail, updatedPassword, updatedPhoneNumber, updatedUsername, id]
     )
@@ -120,7 +135,7 @@ export const updateUserService = async ({
 
 export const deleteUserService = async (id: number) => {
   try {
-    const [rows] = await pool.query<OkPacket>(
+    const [rows] = await connection.query<OkPacket>(
       "DELETE FROM users WHERE id = ?",
       [id]
     )
