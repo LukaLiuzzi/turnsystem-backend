@@ -7,7 +7,7 @@ import {
   registerUserService,
   updateUserService,
 } from "../services/users.services"
-import { isHttpError } from "../helpers"
+import { createHttpError, isHttpError } from "../helpers"
 
 export const registerUserController = async (
   req: Request,
@@ -98,6 +98,10 @@ export const getUserByIdController = async (
 ) => {
   try {
     const { id } = req.params
+    // Si no es un numero se lanza un error
+    if (isNaN(Number(id))) {
+      throw createHttpError(400, "El id debe ser un número")
+    }
     const user = await getUserByIdService(Number(id))
 
     if (isHttpError(user)) {
@@ -118,6 +122,11 @@ export const updateUserController = async (
   try {
     const { id } = req.params
     const { email, password, phone_number, username } = req.body
+
+    // Si no es un numero se lanza un error
+    if (isNaN(Number(id))) {
+      throw createHttpError(400, "El id debe ser un número")
+    }
 
     const updatedUser = await updateUserService({
       email,
@@ -144,6 +153,11 @@ export const deleteUserController = async (
 ) => {
   try {
     const { id } = req.params
+
+    if (isNaN(Number(id))) {
+      throw createHttpError(400, "El id debe ser un número")
+    }
+
     const isDeleted = await deleteUserService(Number(id))
 
     if (isHttpError(isDeleted)) {
