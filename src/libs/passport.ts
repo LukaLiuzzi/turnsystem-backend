@@ -1,10 +1,10 @@
 import passport from "passport"
 import { Strategy as LocalStrategy } from "passport-local"
-import { pool } from "../config"
 import { RowDataPacket } from "mysql2"
 import { User } from "../types/types"
 import { comparePassword, createHttpError } from "../helpers"
 import { Request } from "express"
+import { connection } from "../db_connection"
 
 passport.use(
   new LocalStrategy(
@@ -12,22 +12,24 @@ passport.use(
     async (req: Request, email: string, password: string, done) => {
       try {
         // Buscar al usuario por email en la base de datos
-        const [results] = await pool.query<RowDataPacket[]>(
+        const [results] = await connection.query<RowDataPacket[]>(
           "SELECT * FROM users WHERE email = ?",
           [email]
         )
 
         if (results.length === 0) {
-          return done(createHttpError(404, "Credenciales inválidas"))
+          return done(createHttpError(400, "Credenciales inválidas"))
         }
 
         const user: User = results[0] as User
 
         // Comparar la contraseña del usuario encontrado con la proporcionada
+        if (!user.password)
+          return done(createHttpError(400, "Credenciales inválidas"))
         const validPassword = await comparePassword(password, user.password)
 
         if (!validPassword) {
-          return done(createHttpError(404, "Credenciales inválidas"))
+          return done(createHttpError(400, "Credenciales inválidas"))
         }
 
         // Si el usuario existe y la contraseña es válida, retornar el usuario
@@ -46,7 +48,7 @@ passport.serializeUser((user: any, done) => {
 
 // Deserializar al usuario para obtener sus datos desde la sesión
 passport.deserializeUser(async (id: string, done) => {
-  const [results] = await pool.query<RowDataPacket[]>(
+  const [results] = await connection.query<RowDataPacket[]>(
     "SELECT * FROM users WHERE id = ?",
     [id]
   )
