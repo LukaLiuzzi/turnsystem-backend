@@ -14,6 +14,9 @@ export interface Client {
   last_name: string
   email: string
   phone_number: string
+  address?: string
+  city?: string
+  notes?: string
 }
 
 export interface ClientWithId extends Client {

@@ -88,6 +88,21 @@ export const clientSchema = z.object({
     .max(10, {
       message: "El número de teléfono debe tener como máximo 10 caracteres",
     }),
+  address: z.optional(
+    z.string().max(70, {
+      message: "La dirección debe tener como máximo 70 caracteres",
+    })
+  ),
+  city: z.optional(
+    z.string().max(50, {
+      message: "La ciudad debe tener como máximo 50 caracteres",
+    })
+  ),
+  notes: z.optional(
+    z.string().max(100, {
+      message: "Las notas deben tener como máximo 100 caracteres",
+    })
+  ),
 })
 
 export const clientSchemaPartial = clientSchema.partial()

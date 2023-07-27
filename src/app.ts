@@ -8,6 +8,7 @@ import { userRouter } from "./routes/users.routes"
 import { SECRET_SESSION } from "./config"
 import passport from "passport"
 import morgan from "morgan"
+import { clientsRouter } from "./routes/clients.routes"
 
 const app = express()
 
@@ -39,6 +40,7 @@ app.use(passport.session())
 
 // Rutas
 app.use("/api/v1/users", userRouter)
+app.use("/api/v1/clients", clientsRouter)
 
 app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
   console.error(error)
