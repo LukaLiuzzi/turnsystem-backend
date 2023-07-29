@@ -14,9 +14,11 @@ export interface Client {
   last_name: string
   email: string
   phone_number: string
-  address?: string
-  city?: string
-  notes?: string
+  address?: string | null
+  city?: string | null
+  notes?: string | null
+  createdAt?: Date
+  updatedAt?: Date
 }
 
 export interface ClientWithId extends Client {
