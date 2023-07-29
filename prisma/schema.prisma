@@ -1,0 +1,71 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Client {
+  id           Int      @id @default(autoincrement())
+  first_name   String
+  last_name    String
+  email        String   @unique
+  phone_number String   @unique
+  address      String?
+  city         String?
+  notes        String?
+  turns        Turn[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  password      String
+  email         String         @unique
+  phone_number  String         @unique
+  administrator Administrator?
+}
+
+model Service {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+  price       Float
+  turns       Turn[]
+}
+
+model Turn {
+  id         Int       @id @default(autoincrement())
+  client     Client    @relation(fields: [client_id], references: [id])
+  client_id  Int
+  date       DateTime
+  time       DateTime
+  status     String
+  service    Service   @relation(fields: [service_id], references: [id])
+  service_id Int
+  payments   Payment[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model Payment {
+  id        Int      @id @default(autoincrement())
+  turn      Turn     @relation(fields: [turn_id], references: [id])
+  turn_id   Int
+  amount    Float
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Administrator {
+  id      Int  @id @default(autoincrement())
+  user    User @relation(fields: [user_id], references: [id])
+  user_id Int  @unique
+}
