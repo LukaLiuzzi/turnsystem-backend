@@ -1,7 +1,7 @@
 import { OkPacket, RowDataPacket } from "mysql2"
 import { User, UserWithId } from "../types/types"
 import { createHttpError, hashPassword, isHttpError } from "../helpers"
-import { connection } from "../db_connection"
+import { prisma } from "../db_connection"
 
 export const registerUserService = async ({
   email,
@@ -11,12 +11,13 @@ export const registerUserService = async ({
 }: User) => {
   try {
     // Verificar si el usuario ya existe
-    const [rows] = await connection.query<RowDataPacket[]>(
-      "SELECT * FROM users WHERE email = ?",
-      [email]
-    )
+    const user = await prisma.user.findUnique({
+      where: {
+        email,
+      },
+    })
 
-    if (rows.length > 0) {
+    if (user) {
       return createHttpError(400, "El usuario ya existe")
     }
 
@@ -25,16 +26,18 @@ export const registerUserService = async ({
     const hashedPassword = await hashPassword(password)
 
     // Crear usuario
-    const [result] = await connection.query<OkPacket>(
-      "INSERT INTO users (email, password, phone_number, username) VALUES (?, ?, ?, ?)",
-      [email, hashedPassword, phone_number, username]
-    )
+    const result = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        phone_number,
+      },
+    })
 
     const newUser = {
-      id: result.insertId,
-      email,
-      phone_number,
-      username,
+      id: result.id,
+      email: result.email,
+      phone_number: result.phone_number,
     }
 
     return newUser
@@ -45,14 +48,12 @@ export const registerUserService = async ({
 
 export const getUsersService = async () => {
   try {
-    const [rows] = await connection.query<RowDataPacket[]>(
-      "SELECT * FROM users"
-    )
-
-    // Eliminar la contraseña de los usuarios
-    const users: User[] = rows.map((user: RowDataPacket) => {
-      const { id, email, phone_number, username } = user
-      return { id, email, phone_number, username }
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        phone_number: true,
+      },
     })
 
     return users
@@ -63,18 +64,22 @@ export const getUsersService = async () => {
 
 export const getUserByIdService = async (id: number) => {
   try {
-    const [rows] = await connection.query<RowDataPacket[]>(
-      "SELECT * FROM users WHERE id = ?",
-      [id]
-    )
-    if (rows.length === 0) {
+    const user = await prisma.user.findUnique({
+      where: {
+        id,
+      },
+      select: {
+        id: true,
+        email: true,
+        phone_number: true,
+      },
+    })
+
+    if (!user) {
       return createHttpError(404, "Usuario no encontrado")
     }
 
-    // Eliminar la contraseña del usuario
-    delete rows[0].password
-
-    return rows[0]
+    return user
   } catch (error) {
     throw createHttpError(500, "Error al obtener usuario")
   }
@@ -88,44 +93,52 @@ export const updateUserService = async ({
   id,
 }: UserWithId) => {
   try {
-    const user = await getUserByIdService(id)
+    const user = await prisma.user.findUnique({
+      where: {
+        id,
+      },
+    })
 
-    if (isHttpError(user)) {
-      return user
+    if (!user) {
+      return createHttpError(404, "Usuario no encontrado")
     }
 
     // Si hay otro usuario con el mismo email se lanza un error
     if (email && email !== user.email) {
-      const [rows] = await connection.query<RowDataPacket[]>(
-        "SELECT * FROM users WHERE email = ?",
-        [email]
-      )
+      const users = await prisma.user.findMany({
+        where: {
+          email,
+        },
+      })
 
-      if (rows.length > 0) {
-        return createHttpError(400, "El usuario ya existe")
+      if (users.length > 0) {
+        return createHttpError(400, "El email ya está en uso")
       }
     }
 
     // Actualizamos solo los campos que se envían
     const updatedEmail = email || user.email
     const updatedPhoneNumber = phone_number || user.phone_number
-    const updatedUsername = username || user.username
     const updatedPassword = password
       ? await hashPassword(password)
       : user.password
 
     // Actualizar usuario
-    await connection.query(
-      "UPDATE users SET email = ?, password = ?, phone_number = ?, username = ? WHERE id = ?",
-      [updatedEmail, updatedPassword, updatedPhoneNumber, updatedUsername, id]
-    )
-
-    const updatedUser = {
-      id,
-      email: updatedEmail,
-      phone_number: updatedPhoneNumber,
-      username: updatedUsername,
-    }
+    const updatedUser = await prisma.user.update({
+      where: {
+        id,
+      },
+      data: {
+        email: updatedEmail,
+        password: updatedPassword,
+        phone_number: updatedPhoneNumber,
+      },
+      select: {
+        id: true,
+        email: true,
+        phone_number: true,
+      },
+    })
 
     return updatedUser
   } catch (error) {
@@ -135,15 +148,22 @@ export const updateUserService = async ({
 
 export const deleteUserService = async (id: number) => {
   try {
-    const [rows] = await connection.query<OkPacket>(
-      "DELETE FROM users WHERE id = ?",
-      [id]
-    )
-    if (rows.affectedRows === 0) {
+    const deletedUser = await prisma.user.delete({
+      where: {
+        id,
+      },
+      select: {
+        id: true,
+        email: true,
+        phone_number: true,
+      },
+    })
+
+    if (!deletedUser) {
       return createHttpError(404, "Usuario no encontrado")
     }
 
-    return true
+    return deletedUser
   } catch (error) {
     console.log(error)
     throw createHttpError(500, "Error al eliminar usuario")
